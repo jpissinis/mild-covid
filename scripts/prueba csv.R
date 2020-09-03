@@ -1,0 +1,22 @@
+library(readr)
+library(dplyr)
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+path_csv<-file.path(getwd(),"/raw/covid leve aug.csv")
+aug_csv<-read_csv(path_csv)
+str(aug_csv)
+aug_csv<-aug_csv[,4:31]%>%filter(is.na(DNI)==FALSE)
+str(aug_csv)
+column_names<-c("name","ID","HC","OS","phone","mail","onset",
+                "test","discharge_date","disnea","cough","anosmia",
+                "disgeusia","throat","diarrea","fever","sex",
+                "follow_up_start","follow_up_end","cohabitants",
+                "cohabitants_symptoms","observations","sat",
+                "delayed_discharge","call_dates","n_calls","discharge",
+                "SISA_discharge")
+aug_csv<-set_names(aug_csv,column_names)
+head(aug_csv$onset)
+dmy(aug_csv$onset)

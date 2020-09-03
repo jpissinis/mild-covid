@@ -1,0 +1,41 @@
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(stringr)
+column_names<-c("name","ID","HC","OS","phone","mail","onset",
+                "test","discharge_date","disnea","cough","anosmia",
+                "disgeusia","throat","diarrea","fever","sex",
+                "follow_up_start","follow_up_end","cohabitants",
+                "cohabitants_symptoms","observations","sat",
+                "delayed_discharge","call_dates","n_calls","discharge",
+                "SISA_discharge")
+full_tab<-data.frame()
+for (f in list.files("./raw")){
+  month_tab<-read_csv(file.path("./raw",as.character(f)))
+  month_tab<-month_tab[,4:31]%>%filter(!is.na(DNI))
+  month_tab<-set_names(month_tab,column_names)
+  full_tab<-bind_rows(full_tab,month_tab)
+}
+str(full_tab)
+full_tab_dates<-full_tab%>%mutate(onset=dmy(onset),
+                            test=dmy(test),
+                            discharge_date=dmy(discharge_date),
+                            follow_up_start=dmy(follow_up_start),
+                            follow_up_end=dmy(follow_up_end))
+str(full_tab)
+na_tab<-full_tab_dates%>%filter(is.na(onset)|
+                            is.na(test)|
+                            is.na(discharge_date)|
+                            is.na(follow_up_start)|
+                            is.na(follow_up_end))%>%
+  select(name,onset,test,discharge_date,follow_up_start,follow_up_end)
+str(na_tab)
+view(na_tab)
+full_na_tab<-inner_join(full_tab,na_tab,by="name")
+view(full_na_tab)
+problem_dates<-full_na_tab%>%select(onset.x,onset.y,test.x,test.y,discharge_date.x,discharge_date.y,follow_up_start.x,follow_up_start.y,follow_up_end.x,follow_up_end.y)
+view(problem_dates)
+inpatients<-c("Medrano castro Leonardo","Perez Julia Fernanda","Trejo Silvia","Salvia Ernesto","Cuervo Alarcón Rafael","Pinotti Norberto","Pagano Gutiérrez Silvia","Mancando paula","Hendereich Mauricio","Abrigo María Elena", "Blanco Nicolás", "Tercic Juan", "Coton Alejandro")
+str_replace_all(str_to_lower(str_trim(inpatients)),"[^a-zA-Z]+","_") %in% str_replace_all(str_to_lower(str_trim(full_tab$name)),"[^a-zA-Z]+","_")

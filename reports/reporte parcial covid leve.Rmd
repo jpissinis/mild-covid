@@ -1,0 +1,85 @@
+---
+title: "reporte parcial covid leve"
+author: "Jerónimo Pissinis"
+date: "21/8/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r,echo=FALSE}
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(ggsci)
+```
+
+## Pacientes en seguimiento
+
+## Proporciones de síntomas
+El siguiente es un gráfico que muestra las proporciones de los distintos síntomas la momento del diagnóstico
+```{r symptoms plot, echo=FALSE}
+path<-file.path(getwd(),"raw/planilla seguimiento prueba.xlsx")
+
+#load sheets for both months
+aug<-read_excel(path,sheet=4)
+jul<-read_excel(path,sheet=5)
+act<-read_excel(path,sheet=1,col_names=FALSE)
+
+#filter rows and select the columns
+aug<-aug[,4:31]%>%filter(is.na(DNI)==FALSE)
+jul<-jul[,4:31]%>%filter(is.na(DNI)==FALSE)
+
+#rename
+column_names<-c("name","ID","HC","OS","phone","mail","onset",
+                "test","discharge_date","disnea","cough","anosmia",
+                "disgeusia","throat","diarrea","fever","sex",
+                "follow_up_start","follow_up_end","convivientes",
+                "convivientes_sintomas","observations","sat",
+                "delayed_discharge","call_dates","n_calls","discharge",
+                "SISA_discharge")
+aug<-set_names(aug,column_names)
+jul<-set_names(jul,column_names)
+
+#select columns for sex, symptoms and number of calls
+aug_s<-aug%>%select(ID,sex,disnea,anosmia,disgeusia,throat,
+                    diarrea,fever,cough,n_calls)
+jul_s<-jul%>%select(ID,sex,disnea,anosmia,disgeusia,throat,
+                    diarrea,fever,cough,n_calls)
+#bind both tables
+tab<-bind_rows(jul_s,aug_s)
+
+#mean and confidence interval (95%) of sex, symptoms, n_calls
+se95<-function(x){qnorm(0.975)*sd(x)/sqrt(length(x))}
+mean_tab<-tab%>%summarise_all(mean)
+se_95_tab<-tab%>%summarise_all(se95)
+
+#reshaping the data
+tmp<-c("mean","se_95")
+summary_tab<-bind_rows(mean_tab,se_95_tab)%>%mutate(var=tmp)
+summary_tab<-summary_tab%>%gather("symptom","value",-11)%>%
+  spread(var,value)
+str(summary_tab)
+
+#adding interval limits
+summary_tab<-summary_tab%>%mutate(lower_95=mean-se_95,upper_95=mean+se_95)
+summary_tab<-as.data.frame(summary_tab)
+
+#plotting symptoms
+symptoms<-c("diarrea","disnea","throat","fever","disgeusia","anosmia","cough")
+
+plot<-summary_tab%>%filter(symptom%in%symptoms)%>%
+  ggplot(aes(symptom,mean,fill=symptom))+
+  geom_bar(stat="identity")+
+  scale_y_continuous(limits=c(0:1))+
+  geom_errorbar(aes(x=symptom,ymax=upper_95,ymin=lower_95,width=0.5))+
+  geom_text(aes(label=round(mean,2)),size=3,vjust=1)+
+  xlab("Síntomas")+
+  ylab("Proporción")+
+  ggtitle("Síntomas al momento de consulta")+
+  coord_flip()+
+  theme(legend.position = "none")
+plot
+```
