@@ -126,3 +126,5 @@ mean_evol_plot<-summary_evol%>%
   scale_x_discrete(breaks= "")+
   ggtitle("Evolución Promedio")+
   coord_flip
+
+ajdkdk
