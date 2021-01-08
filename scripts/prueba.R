@@ -8,7 +8,7 @@ library(lubridate)
 #creating the column names
 column_names<-c("name","ID","HC","OS","phone","mail","onset",
                 "test","ER_discharge_date","disnea","cough","anosmia",
-                "disgeusia","throat","diarrea","fever","sex",
+                "disgeusia","throat","diarrea","cephalea","fever","sex",
                 "follow_up_start","follow_up_end","cohabitants",
                 "cohabitants_symptoms","observations","sat",
                 "delayed_discharge","call_dates","n_calls","discharge",
@@ -18,11 +18,11 @@ column_names<-c("name","ID","HC","OS","phone","mail","onset",
 full_tab<-data.frame()
 for (f in list.files("./raw")){
   month_tab<-read_csv(file.path("./raw",as.character(f)))
-  month_tab<-month_tab[,4:31]%>%filter(!is.na(DNI))
+  month_tab<-month_tab[,4:32]%>%filter(!is.na(DNI))
   month_tab<-set_names(month_tab,column_names)
   full_tab<-bind_rows(full_tab,month_tab)
 }
-
+view(full_tab)
 #changing the date format
 full_tab<-full_tab%>%
   mutate(onset=dmy(onset),
@@ -30,6 +30,7 @@ full_tab<-full_tab%>%
          ER_discharge_date=dmy(ER_discharge_date),
          follow_up_start=dmy(follow_up_start),
          follow_up_end=dmy(follow_up_end))
+view(full_tab)
 #Analysis of the symptoms, sex and number of calls
 #selecting columns
 full_symptoms<-full_tab%>%
@@ -38,7 +39,8 @@ full_symptoms<-full_tab%>%
 
 #mean and confidence interval (95%)
 ci95<-function(x){qnorm(0.975)*sd(x)/sqrt(length(x-1))}
-mean_tab<-full_symptoms%>%summarise_all(mean)
+mean_na_rm<-function(x){mean(x,na.rm=TRUE)}
+mean_tab<-full_symptoms%>%summarise_all(mean_na_rm)
 ci_95_tab<-tab%>%summarise_all(ci95)
 
 #reshaping the data
@@ -50,9 +52,9 @@ summary_tab<-summary_tab%>%gather("variable","value",-11)%>%
 #adding interval limits
 summary_tab<-summary_tab%>%
   mutate(lower_95=mean-se_95,upper_95=mean+se_95)
-
+summary_tab
 #plotting symptoms
-symptoms<-c("diarrea","disnea","throat","fever","disgeusia","anosmia","cough")
+symptoms<-c("diarrea","disnea","throat","fever","disgeusia","anosmia","cough","cephalea")
 symptoms_plot<-summary_tab%>%filter(variable%in%symptoms)%>%
   ggplot(aes(reorder(variable,mean),mean,fill=variable))+
   geom_bar(stat="identity")+
@@ -125,6 +127,5 @@ mean_evol_plot<-summary_evol%>%
   scale_y_continuous(breaks = seq(0,15, by = 2) )+
   scale_x_discrete(breaks= "")+
   ggtitle("Evolución Promedio")+
-  coord_flip
-
-ajdkdk
+  coord_flip()
+mean_evol_plot
